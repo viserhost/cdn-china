@@ -3,208 +3,26 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ViserStore • China CDN Status</title>
-    <meta name="description" content="ViserStore China-friendly CDN status and latency tester.">
+    <title>ViserStore • China CDN</title>
+    <meta name="description" content="ViserStore China CDN information page.">
     <style>
-      :root{
-        --bg:#0b0d10; --panel:#12161a; --muted:#6b7785; --text:#e6ebf0; --brand:#4da3ff; --ok:#22c55e; --warn:#eab308; --err:#ef4444; --border:#20262c;
-      }
-      *{box-sizing:border-box}
-      html,body{height:100%}
-      body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,"Helvetica Neue",Arial,"Apple Color Emoji","Segoe UI Emoji"}
-      .wrap{max-width:1100px;margin:0 auto;padding:28px}
-      header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:20px}
-      .brand{display:flex;gap:12px;align-items:center}
-      .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--brand),#7cc7ff);display:grid;place-items:center;color:#001b33;font-weight:800}
-      h1{font-size:22px;margin:0}
-      .muted{color:var(--muted)}
-      .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px}
-      .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
-      .badge{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--border);}
-      .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-      .endpoint{display:grid;gap:12px}
-      button, .btn{appearance:none;border:1px solid var(--border);background:#0f1317;color:var(--text);padding:8px 12px;border-radius:12px;font-weight:600;cursor:pointer}
-      button:hover,.btn:hover{border-color:#2a3139}
-      .stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-      .kpi{background:#0f1317;border:1px solid var(--border);border-radius:12px;padding:10px}
-      .kpi b{font-size:18px}
-      footer{margin-top:28px;color:var(--muted);font-size:13px}
-      .ok{color:var(--ok)} .warn{color:var(--warn)} .err{color:var(--err)}
-      .note{font-size:13px}
-      @media (prefers-color-scheme: light){
-        :root{--bg:#f7f8fa;--panel:#ffffff;--muted:#6b7280;--text:#111827;--brand:#0ea5e9;--ok:#16a34a;--warn:#b45309;--err:#dc2626;--border:#e5e7eb}
-        .logo{color:#e6f5ff}
-        button,.btn{background:#f3f4f6}
-        .kpi{background:#f8fafc}
-      }
-      code{background:#0f1317;border:1px solid var(--border);padding:2px 6px;border-radius:8px}
+      body { margin:0; font-family: system-ui, sans-serif; background:#f9fafb; color:#111; display:flex; justify-content:center; align-items:center; height:100vh; }
+      .card { background:#fff; padding:30px 40px; border-radius:16px; box-shadow:0 6px 18px rgba(0,0,0,0.1); max-width:420px; text-align:center; }
+      h1 { margin:0 0 12px; font-size:24px; color:#0ea5e9; }
+      p { margin:8px 0; font-size:16px; }
+      code { background:#f3f4f6; padding:4px 8px; border-radius:6px; font-size:14px; }
+      footer { margin-top:20px; font-size:13px; color:#6b7280; }
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <header>
-        <div class="brand">
-          <div class="logo">CDN</div>
-          <div>
-            <h1>ViserStore China CDN Status & Latency</h1>
-            <div class="muted">Main domain: ch.viserstore.com • CDN: cdn-china.viserstore.com</div>
-          </div>
-        </div>
-        <div class="row" style="gap:10px">
-          <button id="btn-test-all" title="Run latency tests">Run Tests</button>
-          <button id="btn-clear" title="Clear results">Clear</button>
-        </div>
-      </header>
-
-      <section class="panel" style="margin-bottom:14px">
-        <div class="row">
-          <div class="muted">Your timezone:</div>
-          <div><span id="tz"></span></div>
-        </div>
-        <div class="note" style="margin-top:8px">Tip: host a tiny file like <code>/cdn-ping.gif</code> (1×1, cacheable) on each CDN. We will "fetch" it with a cache-busting query to measure latency.</div>
-      </section>
-
-      <section class="grid" id="endpoints"></section>
-
-      <footer>
-        <div>© <span id="year"></span> ViserStore. 简体中文加速 / 中国大陆优化.</div>
-        <div style="margin-top:6px">ICP 备案号：<span class="muted">填入您的备案号（如：京ICP备12345678号）</span></div>
-      </footer>
+    <div class="card">
+      <h1>ViserStore China CDN</h1>
+      <p>Main domain: <code>ch.viserstore.com</code></p>
+      <p>CDN domain: <code>cdn-china.viserstore.com</code></p>
+      <footer>© <span id="year"></span> ViserStore • 中国大陆优化</footer>
     </div>
-
     <script>
-      // ======= CONFIGURE CDN ENDPOINTS =======
-      const CDN_ENDPOINTS = [
-        { name: 'ViserStore Main (China)', base: 'https://ch.viserstore.com', path: '/cdn-ping.gif' },
-        { name: 'ViserStore China CDN', base: 'https://cdn-china.viserstore.com', path: '/cdn-ping.gif' }
-      ];
-
-      const PINGS_PER_ENDPOINT = 3;
-      const TIMEOUT_MS = 3500;
-
-      const $ = (sel, el=document) => el.querySelector(sel);
-      const $$ = (sel, el=document) => [...el.querySelectorAll(sel)];
-      const fmt = (ms) => isFinite(ms) ? `${Math.round(ms)} ms` : '—';
-      const median = (arr) => {
-        const a = [...arr].sort((x,y)=>x-y); const m = Math.floor(a.length/2);
-        return a.length ? (a.length%2 ? a[m] : (a[m-1]+a[m])/2) : Infinity;
-      };
-
-      function timeout(promise, ms){
-        let id; const t = new Promise((_,rej)=> id=setTimeout(()=>rej(new Error('timeout')), ms));
-        return Promise.race([promise.finally(()=>clearTimeout(id)), t]);
-      }
-
-      async function pingOnce(url){
-        const start = performance.now();
-        const u = new URL(url, location.origin);
-        u.searchParams.set('_t', Math.random().toString(36).slice(2));
-        const res = await fetch(u.toString(), { method:'GET', cache:'no-store', mode:'no-cors' });
-        return performance.now() - start;
-      }
-
-      async function measure(endpoint){
-        const attempts = [];
-        for(let i=0;i<PINGS_PER_ENDPOINT;i++){
-          try{
-            const ms = await timeout(pingOnce(endpoint.base + endpoint.path), TIMEOUT_MS);
-            attempts.push(ms);
-          }catch(e){
-            attempts.push(Infinity);
-          }
-        }
-        const med = median(attempts);
-        const successCount = attempts.filter(x=>isFinite(x)).length;
-        const status = successCount===0 ? 'down' : med < 120 ? 'fast' : med < 400 ? 'ok' : 'slow';
-        return { attempts, med, successCount, status };
-      }
-
-      function endpointCard(ep){
-        const card = document.createElement('div');
-        card.className = 'panel endpoint';
-        card.innerHTML = `
-          <div class="row">
-            <div style="font-weight:700">${ep.name}</div>
-            <span class="badge muted" data-role="status">Idle</span>
-          </div>
-          <div class="stat">
-            <div class="kpi">
-              <div class="muted">Median latency</div>
-              <b data-role="latency">—</b>
-            </div>
-            <div class="kpi">
-              <div class="muted">Reachability</div>
-              <b data-role="reach">—</b>
-            </div>
-          </div>
-          <div class="row">
-            <code style="overflow:auto;white-space:nowrap" data-role="url">${ep.base}</code>
-            <div class="row" style="gap:8px">
-              <button data-action="copy">Copy</button>
-              <a class="btn" href="${ep.base}${ep.path}" target="_blank" rel="noopener">Open</a>
-            </div>
-          </div>
-        `;
-        card.querySelector('[data-action="copy"]').addEventListener('click', async ()=>{
-          try{ await navigator.clipboard.writeText(ep.base); btnToast('Copied'); }catch{ btnToast('Copy failed'); }
-        });
-        return card;
-      }
-
-      function updateCard(card, result){
-        const s = card.querySelector('[data-role="status"]');
-        const lat = card.querySelector('[data-role="latency"]');
-        const reach = card.querySelector('[data-role="reach"]');
-        const cls = (c)=>{ s.classList.remove('ok','warn','err'); if(c) s.classList.add(c); };
-
-        lat.textContent = fmt(result.med);
-        reach.textContent = `${result.successCount}/${PINGS_PER_ENDPOINT}`;
-
-        if(result.status==='fast'){ s.textContent='Fast'; cls('ok'); }
-        else if(result.status==='ok'){ s.textContent='OK'; cls(''); }
-        else if(result.status==='slow'){ s.textContent='Slow'; cls('warn'); }
-        else { s.textContent='Unreachable'; cls('err'); }
-      }
-
-      function btnToast(msg){
-        const el = document.createElement('div');
-        el.textContent = msg;
-        el.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0f1317;border:1px solid var(--border);padding:8px 12px;border-radius:10px;z-index:9999;opacity:0;transition:opacity .2s';
-        document.body.appendChild(el);
-        requestAnimationFrame(()=>{ el.style.opacity = 1; });
-        setTimeout(()=>{ el.style.opacity = 0; setTimeout(()=>el.remove(), 200); }, 1200);
-      }
-
-      async function runAll(){
-        const cards = $$('#endpoints .panel');
-        for(let i=0;i<CDN_ENDPOINTS.length;i++){
-          const card = cards[i];
-          const status = card.querySelector('[data-role="status"]');
-          status.textContent = 'Testing…';
-          status.classList.remove('ok','warn','err');
-          try{
-            const result = await measure(CDN_ENDPOINTS[i]);
-            updateCard(card, result);
-          }catch(e){
-            updateCard(card, {med:Infinity, successCount:0, status:'down'});
-          }
-        }
-      }
-
-      const container = document.getElementById('endpoints');
-      CDN_ENDPOINTS.forEach(ep => container.appendChild(endpointCard(ep)));
-
-      document.getElementById('btn-test-all').addEventListener('click', runAll);
-      document.getElementById('btn-clear').addEventListener('click', ()=>{
-        $$('#endpoints [data-role="status"]').forEach(s=>{s.textContent='Idle'; s.classList.remove('ok','warn','err');});
-        $$('#endpoints [data-role="latency"]').forEach(s=>s.textContent='—');
-        $$('#endpoints [data-role="reach"]').forEach(s=>s.textContent='—');
-      });
-
-      document.getElementById('tz').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown';
       document.getElementById('year').textContent = new Date().getFullYear();
-
-      runAll();
     </script>
   </body>
 </html>
